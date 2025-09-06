@@ -1,11 +1,18 @@
+'use client';
+
 import s from './Header.module.sass';
 import { type JSX } from 'react';
 import classNames from 'classnames';
 import { NavLink } from 'react-router';
+import { useAppState } from '../../redux/useAppSelector';
+import { useActions } from '../../redux/useActions';
 
 export function Header(): JSX.Element {
   const headerStyles = classNames('header ', s.header);
   const headerContainerStyles = classNames('container ', s.headerContainer);
+
+  const { isLogin } = useAppState();
+  const { login, logout } = useActions();
 
   return (
     <header className={headerStyles}>
@@ -30,7 +37,9 @@ export function Header(): JSX.Element {
           </ul>
         </nav>
 
-        <button>Sign Out</button>
+        <button onClick={() => (isLogin ? logout() : login())}>
+          {isLogin ? 'SignOut' : 'SignIn/SignUp'}
+        </button>
       </div>
     </header>
   );

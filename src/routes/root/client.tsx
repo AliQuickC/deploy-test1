@@ -3,6 +3,8 @@
 import { isRouteErrorResponse, useRouteError } from 'react-router';
 import { Footer } from '../../components/Footer/Footer';
 import { Header } from '../../components/Header/Header';
+import { Provider } from 'react-redux';
+import store from '../../redux/store';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -13,9 +15,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <link rel="icon" type="image/svg+xml" href="/vite.svg" />
       </head>
       <body>
-        <Header />
-        {children}
-        <Footer />
+        <Provider store={store}>
+          <Header />
+          {children}
+          <Footer />
+        </Provider>
       </body>
     </html>
   );
