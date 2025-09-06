@@ -12,7 +12,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+        <link
+          rel="shortcut icon"
+          type="image/vnd.microsoft.icon"
+          href="/ikar.ico"
+        ></link>
+        <link rel="icon" type="image/png" href="/ikar.png" />
       </head>
       <body>
         <Provider store={store}>
