@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import { expect, test } from 'vitest';
-import App from './App';
+import Home from './route';
 
 test('Show modal Uncontrolled components Form', async () => {
-  render(<App />);
+  render(<Home />);
 
-  expect(screen.getByTestId('app')).toBeInTheDocument();
+  expect(screen.getByTestId('home')).toBeInTheDocument();
 });
