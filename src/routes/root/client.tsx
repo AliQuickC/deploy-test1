@@ -1,6 +1,9 @@
 'use client';
 
 import { isRouteErrorResponse, useRouteError } from 'react-router';
+import '@mantine/core/styles.css';
+import { MantineProvider } from '@mantine/core';
+import { theme } from '../../theme/theme';
 import { Footer } from '../../components/Footer/Footer';
 import { Header } from '../../components/Header/Header';
 import { Provider } from 'react-redux';
@@ -22,9 +25,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <Provider store={store}>
-          <Header />
-          {children}
-          <Footer />
+          <MantineProvider theme={theme}>
+            <Header />
+            {children}
+            <Footer />
+          </MantineProvider>
         </Provider>
       </body>
     </html>
