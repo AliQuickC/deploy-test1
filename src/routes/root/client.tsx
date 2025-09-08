@@ -18,6 +18,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           href="/ikar.ico"
         ></link>
         <link rel="icon" type="image/png" href="/ikar.png" />
+        <title>Postman</title>
       </head>
       <body>
         <Provider store={store}>
