@@ -1,9 +1,11 @@
 import { configureStore } from '@reduxjs/toolkit';
 import appState from './slice/appSlice';
+import responseState from './slice/responseSlice';
 
 const store = configureStore({
   reducer: {
-    appState: appState,
+    appState,
+    responseState,
   },
 });
 
