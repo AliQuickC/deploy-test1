@@ -19,3 +19,9 @@ export const useResponseState = () => {
 
   return { responseInfo, analitics };
 };
+
+export const useVariablesState = () => {
+  const variables = useAppSelector((state) => state.variablesState);
+
+  return variables;
+};

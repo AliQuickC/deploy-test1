@@ -1,3 +1,11 @@
+import type { VariablesState } from '../../redux/slice/variablesSlice';
+
+type WithOutVariables = {
+  value: string;
+  isError: boolean;
+  errorMessage: string;
+};
+
 export function headerParamsToURL(header: string): string {
   if (!header) {
     return '';
@@ -57,4 +65,27 @@ export function base64UrlDecode(str: string): string {
       .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
       .join('')
   );
+}
+
+function replaceTemplate(template: string, context: VariablesState) {
+  let isError = false;
+  let errorMessage = '';
+
+  const str = template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
+    if (!(key in context)) {
+      isError = true;
+      errorMessage = `Variable "${key}" not found in Variables`;
+    }
+    return context[key];
+  });
+
+  return { value: str || '', isError, errorMessage };
+}
+
+export function replaceVariables(
+  str: string,
+  variables: VariablesState
+): WithOutVariables {
+  const result = replaceTemplate(str, variables);
+  return result;
 }

@@ -4,7 +4,6 @@ import s from './route.module.sass';
 import { useEffect, useState } from 'react';
 import {
   useActionData,
-  useLocation,
   useNavigate,
   useParams,
   useSearchParams,
@@ -14,14 +13,17 @@ import {
   base64UrlDecode,
   base64UrlEncode,
   headerParamsToURL,
+  replaceVariables,
   urlSearchParamsToString,
 } from './utils';
 import { initialState as responseInitial } from '../../redux/slice/responseSlice';
 import { useActions } from '../../redux/useActions';
 import { ResponseInfo } from '../../components/ResponseInfo/ResponseInfo';
+import { useVariablesState } from '../../redux/useAppSelector';
 
 export default function Rest() {
   const { setResponse } = useActions();
+  const variables = useVariablesState();
 
   const submit = useSubmit();
   const actionData = useActionData<{
@@ -38,7 +40,6 @@ export default function Rest() {
   }>();
 
   const navigate = useNavigate();
-  const location = useLocation();
 
   const params = useParams();
   const [searchParams] = useSearchParams();
@@ -50,13 +51,51 @@ export default function Rest() {
   );
   const [headers, setHeaders] = useState('{"Content-Type":"application/json"}');
 
+  const [variableError, setVariableError] = useState<{
+    isError: boolean;
+    errorMessage: string;
+  }>({
+    isError: false,
+    errorMessage: '',
+  });
+
   const handleSubmit = () => {
+    const urlWithoutVariables = replaceVariables(url, variables);
+    if (urlWithoutVariables.isError) {
+      setVariableError({
+        isError: true,
+        errorMessage: urlWithoutVariables.errorMessage,
+      });
+      return;
+    }
+    const bodyWithoutVariables = replaceVariables(body, variables);
+    if (bodyWithoutVariables.isError) {
+      setVariableError({
+        isError: true,
+        errorMessage: bodyWithoutVariables.errorMessage,
+      });
+      return;
+    }
+    const headersWithoutVariables = replaceVariables(headers, variables);
+    if (headersWithoutVariables.isError) {
+      setVariableError({
+        isError: true,
+        errorMessage: headersWithoutVariables.errorMessage,
+      });
+      return;
+    }
+
+    setVariableError({
+      isError: false,
+      errorMessage: '',
+    });
+
     const formData = new FormData();
-    formData.append('url', url);
+    formData.append('url', urlWithoutVariables.value);
     formData.append('method', method);
-    formData.append('headers', headers);
+    formData.append('headers', headersWithoutVariables.value);
     if (body !== 'GET') {
-      formData.append('body', body);
+      formData.append('body', bodyWithoutVariables.value);
     }
 
     submit(formData, { method: 'post', action: '/rest' });
@@ -77,12 +116,16 @@ export default function Rest() {
   };
 
   const getEncodeUrl = (): string => {
-    const encodedUrl = base64UrlEncode(url);
+    const encodedUrl = base64UrlEncode(replaceVariables(url, variables).value);
 
     const encodeBody =
-      body && method !== 'GET' ? '/' + base64UrlEncode(body) : '';
+      body && method !== 'GET'
+        ? '/' + base64UrlEncode(replaceVariables(body, variables).value)
+        : '';
 
-    const str = `/rest/${method}/${encodedUrl}${encodeBody}${headerParamsToURL(headers)}`;
+    const headersWithoutVariables = replaceVariables(headers, variables).value;
+
+    const str = `/rest/${method}/${encodedUrl}${encodeBody}${headerParamsToURL(headersWithoutVariables)}`;
     return str;
   };
 
@@ -94,7 +137,7 @@ export default function Rest() {
     handlerGetParamsFromUrl();
     // eslint-disable-next-line react-compiler/react-compiler
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location]);
+  }, []);
 
   useEffect(() => {
     if (actionData && actionData?.timestamp?.getTime()) {
@@ -207,6 +250,10 @@ export default function Rest() {
             >
               Send
             </button>
+          </div>
+
+          <div className={s.variablesError}>
+            {variableError.isError ? variableError.errorMessage : ''}
           </div>
 
           <div className={s.requestData}>
