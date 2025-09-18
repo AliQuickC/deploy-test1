@@ -11,8 +11,10 @@ import {
 } from 'react-router';
 import {
   base64UrlDecode,
-  base64UrlEncode,
-  headerParamsToURL,
+  ERROR,
+  getEncodeUrl,
+  INVALID_ENDPOINT_URL,
+  INVALID_REQUEST_BODY,
   replaceVariables,
   urlSearchParamsToString,
 } from './utils';
@@ -20,6 +22,9 @@ import { initialState as responseInitial } from '../../redux/slice/responseSlice
 import { useActions } from '../../redux/useActions';
 import { ResponseInfo } from '../../components/ResponseInfo/ResponseInfo';
 import { useVariablesState } from '../../redux/useAppSelector';
+import { RequestMethodEnum, type RequestMethod } from '../../Types/Types';
+import { FormattedMessage } from 'react-intl';
+import classNames from 'classnames';
 
 export default function Rest() {
   const { setResponse } = useActions();
@@ -45,7 +50,7 @@ export default function Rest() {
   const [searchParams] = useSearchParams();
 
   const [url, setUrl] = useState('https://www.swapi.tech/api/starships/');
-  const [method, setMethod] = useState('GET');
+  const [method, setMethod] = useState<RequestMethod>('GET');
   const [body, setBody] = useState(
     '{"title":"fakeTitle","userId":1,"body":"fakeMessage"}'
   );
@@ -94,7 +99,7 @@ export default function Rest() {
     formData.append('url', urlWithoutVariables.value);
     formData.append('method', method);
     formData.append('headers', headersWithoutVariables.value);
-    if (body !== 'GET') {
+    if (method !== 'GET') {
       formData.append('body', bodyWithoutVariables.value);
     }
 
@@ -109,28 +114,38 @@ export default function Rest() {
     if (keys.length === 0 || !params.method) {
       return;
     }
-    setMethod(params.method);
-    setUrl(base64UrlDecode(params?.encodedEndpoint || ''));
-    setBody(base64UrlDecode(params?.encodedBody || ''));
+
+    const isCorrectMethodName = Object.prototype.hasOwnProperty.call(
+      RequestMethodEnum,
+      params.method
+    );
+    if (isCorrectMethodName) {
+      setMethod(params.method as RequestMethod);
+    } else {
+      setMethod(RequestMethodEnum.GET);
+    }
+
+    const decodedEndpointURL = base64UrlDecode(params?.encodedEndpoint || '');
+    if (decodedEndpointURL === ERROR) {
+      setUrl(INVALID_ENDPOINT_URL);
+    } else {
+      setUrl(decodedEndpointURL);
+    }
+
+    const decodedRequestBody = base64UrlDecode(params?.encodedBody || '');
+    if (decodedRequestBody === ERROR) {
+      setBody(INVALID_REQUEST_BODY);
+    } else {
+      setBody(decodedRequestBody);
+    }
+
     setHeaders(urlSearchParamsToString(searchParams.toString()));
   };
 
-  const getEncodeUrl = (): string => {
-    const encodedUrl = base64UrlEncode(replaceVariables(url, variables).value);
-
-    const encodeBody =
-      body && method !== 'GET'
-        ? '/' + base64UrlEncode(replaceVariables(body, variables).value)
-        : '';
-
-    const headersWithoutVariables = replaceVariables(headers, variables).value;
-
-    const str = `/rest/${method}/${encodedUrl}${encodeBody}${headerParamsToURL(headersWithoutVariables)}`;
-    return str;
-  };
-
   const handlerSetUrl = () => {
-    navigate(getEncodeUrl(), { replace: true });
+    navigate(getEncodeUrl(variables, method, url, body, headers), {
+      replace: true,
+    });
   };
 
   useEffect(() => {
@@ -156,10 +171,10 @@ export default function Rest() {
           : actionData.errorDetails.message || ''
         : 'N/A';
       const duration = actionData.duration
-        ? String(actionData.duration) + ' ms'
+        ? String(actionData.duration)
         : 'N/A';
       const responseSize = actionData.responseSize
-        ? String(actionData.responseSize) + ' kb'
+        ? String(actionData.responseSize)
         : 'N/A';
 
       const analitics = {
@@ -170,12 +185,12 @@ export default function Rest() {
           : 'N/A',
         method: actionData.method || 'N/A',
         requestSize: actionData.requestSize
-          ? String(actionData.requestSize) + ' kb'
+          ? String(actionData.requestSize)
           : 'N/A',
         responseSize,
         errorDetails,
         endpoint: actionData.endpoint ? String(actionData.endpoint) : 'N/A',
-        linkToRestClient: getEncodeUrl(),
+        linkToRestClient: getEncodeUrl(variables, method, url, body, headers),
       };
 
       const responseInfo = {
@@ -194,11 +209,18 @@ export default function Rest() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [actionData]);
 
+  const restClientContainerStyles = classNames(
+    'container',
+    s.restClientContainer
+  );
+
   return (
     <main>
-      <div className="container">
+      <div className={restClientContainerStyles}>
         <fieldset className={s.requestClient}>
-          <legend>REST Client</legend>
+          <legend>
+            <FormattedMessage id="restClient.client" />
+          </legend>
           <div className={s.requestParamsWrap}>
             <div className={s.requestParams}>
               <select
@@ -206,7 +228,7 @@ export default function Rest() {
                 name="method"
                 id="method"
                 value={method}
-                onChange={(e) => setMethod(e.target.value)}
+                onChange={(e) => setMethod(e.target.value as RequestMethod)}
               >
                 <option className={s.selectGet} value="GET">
                   GET
@@ -248,7 +270,7 @@ export default function Rest() {
                 handleSubmit();
               }}
             >
-              Send
+              <FormattedMessage id="restClient.sendButton" />
             </button>
           </div>
 
@@ -258,20 +280,26 @@ export default function Rest() {
 
           <div className={s.requestData}>
             <div className={s.requestDataItem}>
-              <label>Request Header:</label>
+              <label htmlFor="request-header">
+                <FormattedMessage id="restClient.requestHeaderTitle" />
+              </label>
               <textarea
                 className={s.requestHeader}
                 value={headers}
                 onChange={(e) => setHeaders(e.target.value)}
+                id="request-header"
               />
             </div>
 
             <div className={s.requestDataItem}>
-              <label>Request Body:</label>
+              <label htmlFor="request-body">
+                <FormattedMessage id="restClient.requestBodyTitle" />
+              </label>
               <textarea
                 className={s.jsonBody}
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
+                id="request-body"
               />
             </div>
           </div>

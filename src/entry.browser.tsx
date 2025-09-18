@@ -24,9 +24,6 @@ setServerCallback(
 
 createFromReadableStream<RSCServerPayload>(getRSCStream()).then((payload) => {
   startTransition(async () => {
-    // const formState =
-    //   payload.type === 'render' ? await payload.formState : undefined;
-
     const formState =
       payload.type === 'render' && payload.formState != null
         ? ((await payload.formState) as ReactFormState)
