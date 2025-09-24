@@ -9,7 +9,13 @@ import reactCompiler from 'eslint-plugin-react-compiler';
 
 export default tseslint.config(
   {
-    ignores: ['dist', 'coverage', '**/owid-co2-data.json'],
+    ignores: [
+      'dist',
+      'coverage',
+      '**/owid-co2-data.json',
+      '.netlify',
+      'netlify',
+    ],
   },
   {
     extends: [
